@@ -1,13 +1,16 @@
-
-import numpy as np
 from glob import glob
-from numpy import around, array
+from numpy import around, array, concatenate
 from os.path import join
 from chb_edf_file import ChbEdfFile
 from chb_label_wrapper import ChbLabelWrapper
 from mne.io import read_raw_edf
+from warnings import filterwarnings
+
+
+filterwarnings("ignore", category=RuntimeWarning)
 
 class Patient:
+    
     def __init__(self, id, path_dataset):
         self._id = id
         self._path_dataset = path_dataset
@@ -34,46 +37,49 @@ class Patient:
 
     def get_eeg_data(self):
     
-        all_data = [file.get_data().T for file in self._edf_files]
+        all_data = [file.get_data() for file in self._edf_files]
         
-        return np.concatenate(all_data)
+        return concatenate(all_data)
 
-    def get_non_seizures(self):
+    def get_non_seizures(self, name_channel="FT9-FT10"):
         
         clips = []
         for input_, file in zip(self._seizure_list, self._edf_files):
-
+            
+            data_frame = file.to_data_frame()
             range_times = around(file.times, 2)
 
             if input_ == []:
 
-                clips.append(file.get_data().T)
+                clips.append(data_frame[name_channel].to_numpy())
 
             else:
                 acc_not_seizure = array([])
-                
+
                 for range_ in input_:
 
                     begin = range_[0]
 
                     end = range_[1]
 
-                    range_not_seizure = array([(range_times >= begin) & 
-                                               (range_times <= end)]).reshape(-1) 
+                    range_not_seizure = array([(range_times >= begin) &
+                                               (range_times <= end)]).reshape(-1)
 
                     acc_not_seizure = (range_not_seizure | range_not_seizure)
-
-                clips.append(file.get_data().T[(~ acc_not_seizure)])
+                
+                clips.append(data_frame[name_channel].to_numpy()[(~ acc_not_seizure)])
 
         return clips
 
-    def get_seizure_clips(self):
-        
+    def get_seizure_clips(self, name_channel = "FT9-FT10"):
+
         clips = []
         for input_, file in zip(self._seizure_list, self._edf_files):
 
             range_times = around(file.times, 2)
 
+            data_frame = file.to_data_frame()
+            
             if input_ == []:
 
                 clips.append([])
@@ -85,9 +91,11 @@ class Patient:
                     begin = range_[0]
 
                     end = range_[1]
+                    
+                    range_seizure = [(range_times >= begin) & (range_times < end)]
 
-                    clips_ = file.get_data().T[(range_times >= begin) & (range_times < end)]
+                    clips_ = data_frame[name_channel].to_numpy()[range_seizure]
 
                     clips.append(clips_)
-
+        
         return clips
