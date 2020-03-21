@@ -1,73 +1,93 @@
-import glob
-import numpy as np
 
+import numpy as np
+from glob import glob
+from numpy import around, array
+from os.path import join
 from chb_edf_file import ChbEdfFile
 from chb_label_wrapper import ChbLabelWrapper
+from mne.io import read_raw_edf
 
 class Patient:
-    def __init__(self, id):
+    def __init__(self, id, path_dataset):
         self._id = id
-        self._edf_files = map(
-            lambda filename: ChbEdfFile(filename, self._id),
-            glob.glob("physionet.org/pn6/chbmit/chb%02d/*.edf" % self._id)
-        )
-        self._cumulative_duration = [0]
-        
-        for file in self._edf_files[:-1]:
-            self._cumulative_duration.append(self._cumulative_duration[-1] + file.get_file_duration())
-        
-        self._duration = sum(self._cumulative_duration)
-        
-        self._seizure_list = ChbLabelWrapper("physionet.org/pn6/chbmit/chb%02d/chb%02d-summary.txt" % (self._id, self._id)).get_seizure_list()
-        self._seizure_intervals = []
+        self._path_dataset = path_dataset
+        self._list_files = glob(join(self._path_dataset, 
+                                     "chb{0:0=2d}/*.edf".format(self._id)) )
 
-        for i, file in enumerate(self._seizure_list):
-            for seizure in file:
-                begin = seizure[0] * self._edf_files[i].get_sampling_rate() + self._cumulative_duration[i]
-                end = seizure[1] * self._edf_files[i].get_sampling_rate() + self._cumulative_duration[i]
-                self._seizure_intervals.append((begin, end))
+        self._edf_files = list(map(lambda x : read_raw_edf(x, verbose=0), 
+                                   self._list_files))
+        self._cumulative_duration = [0]
+
+        self._cumulative_duration = [len(file.times) 
+                                     for file in self._edf_files]
+
+        self._duration = sum(self._cumulative_duration)
+
+        self._seizure_list = ChbLabelWrapper(
+                                    "../data/chbmit/chb{0:0=2d}/chb{0:0=2d}-summary.txt".format(
+                                        self._id, 
+                                        self._id)).get_seizure_list()
+
 
     def get_channel_names(self):
         return self._edf_files[0].get_channel_names()
 
     def get_eeg_data(self):
-        for i, file in enumerate(self._edf_files):
-            print "Reading EEG data from file %s" % file._filename
-            if not i:
-                data = file.get_data()
+    
+        all_data = [file.get_data().T for file in self._edf_files]
+        
+        return np.concatenate(all_data)
+
+    def get_non_seizures(self):
+        
+        clips = []
+        for input_, file in zip(self._seizure_list, self._edf_files):
+
+            range_times = around(file.times, 2)
+
+            if input_ == []:
+
+                clips.append(file.get_data().T)
+
             else:
-                data = np.vstack((data, file.get_data()))
+                acc_not_seizure = array([])
+                
+                for range_ in input_:
 
-        return data
+                    begin = range_[0]
 
-    def get_seizures(self):
-        return self._seizure_list
+                    end = range_[1]
 
-    def get_seizure_intervals(self):
-        return self._seizure_intervals
+                    range_not_seizure = array([(range_times >= begin) & 
+                                               (range_times <= end)]).reshape(-1) 
 
-    def get_seizure_labels(self):
-        labels = np.zeros(self._duration)
+                    acc_not_seizure = (range_not_seizure | range_not_seizure)
 
-        for i, interval in enumerate(self._seizure_intervals):
-                labels[interval[0]:interval[1]] = 1
+                clips.append(file.get_data().T[(~ acc_not_seizure)])
 
-        return labels
+        return clips
 
     def get_seizure_clips(self):
-        clips = []
-        data = self.get_eeg_data()
-        labels = self.get_seizure_labels()
-
-        for i in range(len(self._seizure_intervals)):
-            if not i:
-                left = 0
-            else:
-                left = (self._seizure_intervals[i-1][1] + self._seizure_intervals[i][0]) / 2
-            if i == len(self._seizure_intervals) - 1:
-                right = -1
-            else:
-                right = (self._seizure_intervals[i][1] + self._seizure_intervals[i+1][0]) / 2
-            clips.append((data[left:right], labels[left:right]))
         
+        clips = []
+        for input_, file in zip(self._seizure_list, self._edf_files):
+
+            range_times = around(file.times, 2)
+
+            if input_ == []:
+
+                clips.append([])
+
+            else:
+
+                for range_ in input_:
+
+                    begin = range_[0]
+
+                    end = range_[1]
+
+                    clips_ = file.get_data().T[(range_times >= begin) & (range_times < end)]
+
+                    clips.append(clips_)
+
         return clips
