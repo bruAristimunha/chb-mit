@@ -99,8 +99,8 @@ class ChbLabelWrapper:
             file_metadata['seizure_intervals'] = seizure_intervals
             output_metadata[filename] = file_metadata
         else:
-            import warnings
-            warnings.warn("Block didn't follow the pattern for a metadata file block", Warning)
+            #import warnings
+            #warnings.warn("Block didn't follow the pattern for a metadata file block", Warning)
             # Check channel names
             try:
                 self._channel_names = self._parse_channel_names("\n".join(metadata_block))
