@@ -1,6 +1,6 @@
 # chb-mit
 
-Functions for reading the CHB-MIT scalp EEG database. Update on the work developed by @dougkoch. Adaptation to use in the reproduction of an article.
+Functions for reading the CHB-MIT scalp EEG database. Update on the work developed by [@dougkoch](https://github.com/dougkoch/). Adaptation to use in the reproduction of an article.
 
 Modifications made:
 
