@@ -1,8 +1,6 @@
 from abc import abstractmethod, ABCMeta
 from collections import OrderedDict
-import datetime
-import numpy as np
-import re
+from re import compile
 
 class ChbLabelWrapper:
     """
@@ -41,7 +39,7 @@ class ChbLabelWrapper:
         :param frequency_block: Frequency block
         :return: Parses and returns the frequency value in Hz
         """
-        pattern = re.compile("Data Sampling Rate: (.*?) Hz")
+        pattern = compile("Data Sampling Rate: (.*?) Hz")
         result = pattern.search(frequency_block)
         # Check if there is a match or not
         if result is None:
@@ -57,7 +55,7 @@ class ChbLabelWrapper:
         """
         # Split by line
         lines = channel_block.split('\n')
-        pattern = re.compile("Channel [0-9]{1,}: (.*?)$")
+        pattern = compile("Channel [0-9]{1,}: (.*?)$")
 
         output_channel_list = []
         for line in lines:
@@ -76,12 +74,12 @@ class ChbLabelWrapper:
         :return:
         """
         # Search first line for seizure file pattern
-        pattern_filename = re.compile("File Name: (.*?)$")
-        pattern_start_time = re.compile("File Start Time: (.*?)$")
-        pattern_end_time = re.compile("File End Time: (.*?)$")
-        pattern_seizures = re.compile("Number of Seizures in File: (.*?)$")
-        pattern_seizure_start = re.compile("Seizure [0-9]{0,}[ ]{0,}Start Time: (.*?) seconds")
-        pattern_seizure_end = re.compile("Seizure [0-9]{0,}[ ]{0,}End Time: (.*?) seconds")
+        pattern_filename = compile("File Name: (.*?)$")
+        pattern_start_time = compile("File Start Time: (.*?)$")
+        pattern_end_time = compile("File End Time: (.*?)$")
+        pattern_seizures = compile("Number of Seizures in File: (.*?)$")
+        pattern_seizure_start = compile("Seizure [0-9]{0,}[ ]{0,}Start Time: (.*?) seconds")
+        pattern_seizure_end = compile("Seizure [0-9]{0,}[ ]{0,}End Time: (.*?) seconds")
 
         if pattern_filename.search(metadata_block[0]) is not None:
             file_metadata = dict()
