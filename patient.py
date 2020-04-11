@@ -27,10 +27,10 @@ class Patient:
 
         self._duration = sum(self._cumulative_duration)
 
-        self._seizure_list = ChbLabelWrapper(
-            "../data/chbmit/chb{0:0=2d}/chb{0:0=2d}-summary.txt".format(
-                self._id,
-                self._id)).get_seizure_list()
+        name_path = "chb{0:0=2d}/chb{0:0=2d}-summary.txt".format(self._id, self._id)
+        
+        self._seizure_list = ChbLabelWrapper(join(self._path_dataset,
+                                                  name_path)).get_seizure_list()
 
     def get_channel_names(self):
         return self._edf_files[0].get_channel_names()
