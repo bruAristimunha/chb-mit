@@ -9,7 +9,7 @@ class ChbLabelWrapper:
 
     def __init__(self, filename):
         self._filename = filename
-        self._file = open(filename, 'r')
+        self._file = open(filename, "r")
         self._parse_file(self._file)
         self._file.close()
 
@@ -20,7 +20,7 @@ class ChbLabelWrapper:
         """
         # Split file into blocks
         data = file_obj.read()
-        blocks = data.split('\n\n')
+        blocks = data.split("\n\n")
 
         # Block zero
         self._frequency = self._parse_frequency(blocks[0])
@@ -45,7 +45,8 @@ class ChbLabelWrapper:
         # Check if there is a match or not
         if result is None:
             raise ValueError(
-                'Frequency block does not contain the correct string ("Data Sampling Rate: __ Hz")')
+                'Frequency block does not contain the correct string ("Data Sampling Rate: __ Hz")'
+            )
         result = int(result.group(1))
         return result
 
@@ -56,7 +57,7 @@ class ChbLabelWrapper:
         :return: Returns the channel names as a list of strings
         """
         # Split by line
-        lines = channel_block.split('\n')
+        lines = channel_block.split("\n")
         pattern = compile_re("Channel [0-9]{1,}: (.*?)$")
 
         output_channel_list = []
@@ -81,39 +82,47 @@ class ChbLabelWrapper:
         pattern_end_time = compile_re("File End Time: (.*?)$")
         pattern_seizures = compile_re("Number of Seizures in File: (.*?)$")
         pattern_seizure_start = compile_re(
-            "Seizure [0-9]{0,}[ ]{0,}Start Time: (.*?) seconds")
+            "Seizure [0-9]{0,}[ ]{0,}Start Time: (.*?) seconds"
+        )
         pattern_seizure_end = compile_re(
-            "Seizure [0-9]{0,}[ ]{0,}End Time: (.*?) seconds")
+            "Seizure [0-9]{0,}[ ]{0,}End Time: (.*?) seconds"
+        )
 
         if pattern_filename.search(metadata_block[0]) is not None:
             file_metadata = dict()
             filename = pattern_filename.search(metadata_block[0]).group(1)
-            file_metadata['start_time'] = pattern_start_time.search(
-                metadata_block[1]).group(1)
-            file_metadata['end_time'] = pattern_end_time.search(
-                metadata_block[2]).group(1)
-            file_metadata['n_seizures'] = int(
-                pattern_seizures.search(metadata_block[3]).group(1))
-            file_metadata['channel_names'] = self._channel_names
-            file_metadata['sampling_rate'] = self.get_sampling_rate()
+            file_metadata["start_time"] = pattern_start_time.search(
+                metadata_block[1]
+            ).group(1)
+            file_metadata["end_time"] = pattern_end_time.search(
+                metadata_block[2]
+            ).group(1)
+            file_metadata["n_seizures"] = int(
+                pattern_seizures.search(metadata_block[3]).group(1)
+            )
+            file_metadata["channel_names"] = self._channel_names
+            file_metadata["sampling_rate"] = self.get_sampling_rate()
             seizure_intervals = []
-            for i in range(file_metadata['n_seizures']):
-                seizure_start = int(pattern_seizure_start.search(
-                    metadata_block[4 + i * 2]).group(1))
-                seizure_end = int(pattern_seizure_end.search(
-                    metadata_block[4 + i * 2 + 1]).group(1))
+            for i in range(file_metadata["n_seizures"]):
+                seizure_start = int(
+                    pattern_seizure_start.search(metadata_block[4 + i * 2]).group(1)
+                )
+                seizure_end = int(
+                    pattern_seizure_end.search(metadata_block[4 + i * 2 + 1]).group(1)
+                )
                 seizure_intervals.append((seizure_start, seizure_end))
-            file_metadata['seizure_intervals'] = seizure_intervals
+            file_metadata["seizure_intervals"] = seizure_intervals
             output_metadata[filename] = file_metadata
         else:
-            #import warnings
-            #warnings.warn("Block didn't follow the pattern for a metadata file block", Warning)
+            # import warnings
+            # warnings.warn("Block didn't follow the pattern for a metadata file block", Warning)
             # Check channel names
             try:
                 self._channel_names = self._parse_channel_names(
-                    "\n".join(metadata_block))
+                    "\n".join(metadata_block)
+                )
             except Exception as error:
-                print('Failed to parse block as a channel names block')
+                print("Failed to parse block as a channel names block")
                 raise error
         return output_metadata
 
@@ -127,7 +136,7 @@ class ChbLabelWrapper:
         """
         output_metadata = OrderedDict()
         for block in seizure_file_blocks:
-            lines = block.split('\n')
+            lines = block.split("\n")
             output_metadata = self._parse_metadata(lines, output_metadata)
 
         return output_metadata
@@ -142,14 +151,16 @@ class ChbLabelWrapper:
         """
         Return the channel names
         """
-        return self._metadata_store[filename]['channel_names']
+        return self._metadata_store[filename]["channel_names"]
 
     def get_seizure_list(self):
         """
         Get list of seizure intervals for each file
         """
-        return [metadata['seizure_intervals']
-                for filename, metadata in self._metadata_store.items()]
+        return [
+            metadata["seizure_intervals"]
+            for filename, metadata in self._metadata_store.items()
+        ]
 
     def get_file_metadata(self):
         """

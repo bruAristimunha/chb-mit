@@ -11,26 +11,27 @@ filterwarnings("ignore", category=RuntimeWarning)
 
 
 class Patient:
-
     def __init__(self, id, path_dataset):
         self._id = id
         self._path_dataset = path_dataset
-        self._list_files = glob(join(self._path_dataset,
-                                     "chb{0:0=2d}/*.edf".format(self._id)))
+        self._list_files = glob(
+            join(self._path_dataset, "chb{0:0=2d}/*.edf".format(self._id))
+        )
 
-        self._edf_files = list(map(lambda x: read_raw_edf(x, verbose=0),
-                                   self._list_files))
+        self._edf_files = list(
+            map(lambda x: read_raw_edf(x, verbose=0), self._list_files)
+        )
         self._cumulative_duration = [0]
 
-        self._cumulative_duration = [len(file.times)
-                                     for file in self._edf_files]
+        self._cumulative_duration = [len(file.times) for file in self._edf_files]
 
         self._duration = sum(self._cumulative_duration)
 
         name_path = "chb{0:0=2d}/chb{0:0=2d}-summary.txt".format(self._id, self._id)
-        
-        self._seizure_list = ChbLabelWrapper(join(self._path_dataset,
-                                                  name_path)).get_seizure_list()
+
+        self._seizure_list = ChbLabelWrapper(
+            join(self._path_dataset, name_path)
+        ).get_seizure_list()
 
     def get_channel_names(self):
         return self._edf_files[0].get_channel_names()
@@ -62,12 +63,13 @@ class Patient:
 
                     end = range_[1]
 
-                    range_not_seizure = array([(range_times >= begin) &
-                                               (range_times <= end)]).reshape(-1)
+                    range_not_seizure = array(
+                        [(range_times >= begin) & (range_times <= end)]
+                    ).reshape(-1)
 
-                    acc_not_seizure = (range_not_seizure | range_not_seizure)
+                    acc_not_seizure = range_not_seizure | range_not_seizure
 
-                clips.append(data_frame[name_channel].to_numpy()[(~ acc_not_seizure)])
+                clips.append(data_frame[name_channel].to_numpy()[(~acc_not_seizure)])
 
         return clips
 
@@ -92,11 +94,9 @@ class Patient:
 
                     end = range_[1]
 
-                    range_seizure = [(range_times >= begin)
-                                     & (range_times < end)]
+                    range_seizure = [(range_times >= begin) & (range_times < end)]
 
-                    clips_ = data_frame[name_channel].to_numpy()[
-                        tuple(range_seizure)]
+                    clips_ = data_frame[name_channel].to_numpy()[tuple(range_seizure)]
 
                     clips.append(clips_)
 
